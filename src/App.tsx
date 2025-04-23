@@ -18,7 +18,7 @@ export default function App() {
     genre: "",
     mood: "",
     tempo: "",
-    duration: "3:00",
+    duration: "",
   });
 
   /* ------------------------------ audio element ------------------------------- */
