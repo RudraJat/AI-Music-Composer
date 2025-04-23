@@ -49,10 +49,10 @@ export default function App() {
       prompt
         // remove stray * or #
         .replace(/[\*#]/g, "")
-        // bold label before first colon e.g. "Genre:" -> <strong>
+        // bold label before first colon
         .replace(/^([^:\n]+?):/gm, "<strong>$1:</strong>")
-        // bold timing lines e.g. "0:00-0:15 (Intro)"
-        .replace(/^(\d{1,2}:\d{2}[^\n]*)$/gm, "<strong>$1</strong>")
+        // bold full timing lines such as 0:00-0:15 (Intro)
+        .replace(/^[\t ]*(\d{1,2}:\d{2}\s*-?\s*\d{1,2}:\d{2}\s*\([^\n]+\))/gm, "<strong>$1</strong>")
     );
   };
 
@@ -74,10 +74,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       <div className="container mx-auto px-4 py-12">
-        {/* ------------------------------ header ------------------------------ */}
         <Header />
-
-        {/* --------------------------- control & player ------------------------- */}
         <div className="max-w-4xl mx-auto">
           <ControlCard
             selectedParams={selectedParams}
@@ -93,8 +90,6 @@ export default function App() {
             volume={volume}
             setVolume={setVolume}
           />
-
-          {/* ------------------------------ output card --------------------------- */}
           {generatedPrompt && (
             <div className="bg-white rounded-2xl shadow-xl p-8 backdrop-blur-lg bg-opacity-90">
               <h2 className="text-2xl font-semibold mb-6 text-gray-800">Your Composition</h2>
