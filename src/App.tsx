@@ -18,7 +18,7 @@ export default function App() {
     genre: "",
     mood: "",
     tempo: "",
-    duration: "",
+    duration: "3:00",
   });
 
   /* ------------------------------ audio element ------------------------------- */
@@ -34,7 +34,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (audioRef.current) (isPlaying ? audioRef.current.play() : audioRef.current.pause());
+    if (audioRef.current) {
+      isPlaying ? audioRef.current.play() : audioRef.current.pause();
+    }
   }, [isPlaying]);
 
   useEffect(() => {
@@ -45,21 +47,17 @@ export default function App() {
   const formatPrompt = (prompt: string) => {
     return (
       prompt
-        // strip stray * or #
+        // remove stray * or #
         .replace(/[\*#]/g, "")
-        // bold label before first colon (heading)
+        // bold label before first colon e.g. "Genre:" -> <strong>
         .replace(/^([^:\n]+?):/gm, "<strong>$1:</strong>")
+        // bold timing lines e.g. "0:00-0:15 (Intro)"
+        .replace(/^(\d{1,2}:\d{2}[^\n]*)$/gm, "<strong>$1</strong>")
     );
   };
 
   /* ------------------------------ generate music ----------------------------- */
   const handleGenerate = async () => {
-    // Check if all fields are selected
-    if (!selectedParams.genre || !selectedParams.mood || !selectedParams.tempo || !selectedParams.duration) {
-      alert("Please select all fields (Genre, Mood, Tempo, and Duration) before generating music.");
-      return;
-    }
-  
     setIsLoading(true);
     try {
       const raw = await generateMusicPrompt(selectedParams);
@@ -77,88 +75,24 @@ export default function App() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       <div className="container mx-auto px-4 py-12">
         {/* ------------------------------ header ------------------------------ */}
-        <header className="text-center mb-16">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="bg-purple-600 p-3 rounded-2xl shadow-lg">
-              <Music4 className="w-12 h-12 text-white" />
-            </div>
-            <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">
-              AI Music Composer
-            </h1>
-          </div>
-          <p className="text-xl text-gray-600">
-            Create unique music compositions powered by artificial intelligence
-          </p>
-        </header>
+        <Header />
 
         {/* --------------------------- control & player ------------------------- */}
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 backdrop-blur-lg bg-opacity-90">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              <Selector
-                label="Genre"
-                value={selectedParams.genre}
-                options={genres}
-                onChange={(v) => setSelectedParams({ ...selectedParams, genre: v })}
-              />
-              <Selector
-                label="Mood"
-                value={selectedParams.mood}
-                options={moods}
-                onChange={(v) => setSelectedParams({ ...selectedParams, mood: v })}
-              />
-              <Selector
-                label="Tempo"
-                value={selectedParams.tempo}
-                options={tempos}
-                onChange={(v) => setSelectedParams({ ...selectedParams, tempo: v })}
-              />
-              <Selector
-                label="Duration"
-                value={selectedParams.duration}
-                options={["1:00", "2:00", "3:00", "5:00"]}
-                onChange={(v) => setSelectedParams({ ...selectedParams, duration: v })}
-              />
-            </div>
-
-            {/* -------- generate button & playback controls -------- */}
-            <div className="flex items-center gap-6">
-              <button
-                onClick={handleGenerate}
-                disabled={isLoading}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 px-6 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-              >
-                <Wand2 className="w-6 h-6" />
-                {isLoading ? "Composing..." : "Generate Music"}
-              </button>
-
-              {generatedPrompt && (
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    className="p-4 rounded-full bg-purple-100 hover:bg-purple-200 transition-colors"
-                  >
-                    {isPlaying ? (
-                      <Pause className="w-6 h-6 text-purple-600" />
-                    ) : (
-                      <Play className="w-6 h-6 text-purple-600" />
-                    )}
-                  </button>
-                  <div className="flex items-center gap-2">
-                    <Volume2 className="w-5 h-5 text-gray-600" />
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={volume}
-                      onChange={(e) => setVolume(Number(e.target.value))}
-                      className="w-24 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <ControlCard
+            selectedParams={selectedParams}
+            setSelectedParams={setSelectedParams}
+            genres={genres}
+            moods={moods}
+            tempos={tempos}
+            isLoading={isLoading}
+            handleGenerate={handleGenerate}
+            generatedPrompt={generatedPrompt}
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+            volume={volume}
+            setVolume={setVolume}
+          />
 
           {/* ------------------------------ output card --------------------------- */}
           {generatedPrompt && (
@@ -176,32 +110,76 @@ export default function App() {
   );
 }
 
+/* ------------------------------ header comp ------------------------------ */
+function Header() {
+  return (
+    <header className="text-center mb-16">
+      <div className="flex items-center justify-center gap-3 mb-6">
+        <div className="bg-purple-600 p-3 rounded-2xl shadow-lg">
+          <Music4 className="w-12 h-12 text-white" />
+        </div>
+        <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">
+          AI Music Composer
+        </h1>
+      </div>
+      <p className="text-xl text-gray-600">
+        Create unique music compositions powered by artificial intelligence
+      </p>
+    </header>
+  );
+}
+
+/* ---------------------------- control card comp --------------------------- */
+function ControlCard({
+  selectedParams,
+  setSelectedParams,
+  genres,
+  moods,
+  tempos,
+  isLoading,
+  handleGenerate,
+  generatedPrompt,
+  isPlaying,
+  setIsPlaying,
+  volume,
+  setVolume,
+}: any) {
+  return (
+    <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 backdrop-blur-lg bg-opacity-90">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <Selector label="Genre" value={selectedParams.genre} options={genres} onChange={(v:any)=>setSelectedParams({...selectedParams,genre:v})}/>
+        <Selector label="Mood" value={selectedParams.mood} options={moods} onChange={(v:any)=>setSelectedParams({...selectedParams,mood:v})}/>
+        <Selector label="Tempo" value={selectedParams.tempo} options={tempos} onChange={(v:any)=>setSelectedParams({...selectedParams,tempo:v})}/>
+        <Selector label="Duration" value={selectedParams.duration} options={["1:00","2:00","3:00","5:00"]} onChange={(v:any)=>setSelectedParams({...selectedParams,duration:v})}/>
+      </div>
+      <div className="flex items-center gap-6">
+        <button onClick={handleGenerate} disabled={isLoading} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 px-6 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+          <Wand2 className="w-6 h-6" />{isLoading?"Composing...":"Generate Music"}
+        </button>
+        {generatedPrompt && (
+          <div className="flex items-center gap-4">
+            <button onClick={()=>setIsPlaying(!isPlaying)} className="p-4 rounded-full bg-purple-100 hover:bg-purple-200 transition-colors">
+              {isPlaying? <Pause className="w-6 h-6 text-purple-600"/> : <Play className="w-6 h-6 text-purple-600"/>}
+            </button>
+            <div className="flex items-center gap-2">
+              <Volume2 className="w-5 h-5 text-gray-600" />
+              <input type="range" min="0" max="100" value={volume} onChange={(e)=>setVolume(Number(e.target.value))} className="w-24 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"/>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------ selector comp ------------------------------ */
-function Selector({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (v: string) => void;
-}) {
+function Selector({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void; }) {
   return (
     <div className="space-y-4">
       <label className="block text-sm font-medium text-gray-700">{label}</label>
-      <select
-        className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
+      <select className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all" value={value} onChange={(e)=>onChange(e.target.value)}>
         <option value="">Select {label}</option>
-        {options.map((o) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
-        ))}
+        {options.map((o)=>(<option key={o} value={o}>{o}</option>))}
       </select>
     </div>
   );
