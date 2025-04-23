@@ -18,7 +18,7 @@ export default function App() {
     genre: "",
     mood: "",
     tempo: "",
-    duration: "3:00",
+    duration: "",
   });
 
   /* ------------------------------ audio element ------------------------------- */
@@ -58,6 +58,12 @@ export default function App() {
 
   /* ------------------------------ generate music ----------------------------- */
   const handleGenerate = async () => {
+    // Check if all fields are selected
+    if (!selectedParams.genre || !selectedParams.mood || !selectedParams.tempo || !selectedParams.duration) {
+      alert("Please select all fields (Genre, Mood, Tempo, and Duration) before generating music.");
+      return;
+    }
+  
     setIsLoading(true);
     try {
       const raw = await generateMusicPrompt(selectedParams);
