@@ -2,6 +2,22 @@ import React, { useState, useRef, useEffect } from "react";
 import { Music4, Wand2, Volume2, Play, Pause } from "lucide-react";
 import { generateMusicPrompt } from "./lib/gemini";
 
+// Add music samples mapping
+const musicSamples = {
+  Classical: {
+    Happy: "/music/classical-happy.mp3",
+    Melancholic: "/music/classical-melancholic.mp3",
+    Energetic: "/music/classical-energetic.mp3",
+    Calm: "/music/classical-calm.mp3",
+    Mysterious: "/music/classical-mysterious.mp3"
+  },
+  Jazz: {
+    Happy: "/music/jazz-happy.mp3",
+    // ... other moods
+  },
+  // ... other genres
+};
+
 export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(50);
@@ -23,16 +39,62 @@ export default function App() {
 
   /* ------------------------------ audio element ------------------------------- */
   useEffect(() => {
-    audioRef.current = new Audio(
-      "https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav"
-    );
-    audioRef.current.loop = true;
+    // Remove the static audio initialization since we'll create it after generation
     return () => {
       audioRef.current?.pause();
       audioRef.current = null;
     };
   }, []);
 
+  /* ------------------------------ generate music ----------------------------- */
+  const handleGenerate = async () => {
+    if (!selectedParams.genre || !selectedParams.mood || !selectedParams.tempo || !selectedParams.duration) {
+      alert("Please select all fields (Genre, Mood, Tempo, and Duration) before generating music.");
+      return;
+    }
+  
+    setIsLoading(true);
+    try {
+      const raw = await generateMusicPrompt(selectedParams);
+      setGeneratedPrompt(formatPrompt(raw));
+      
+      // Create new audio element with selected genre and mood's audio
+      const audio = new Audio();
+      // Handle special case for "Energetic" mood
+      const moodFileName = selectedParams.mood === "Energetic" ? "energetic" : selectedParams.mood.toLowerCase();
+      audio.src = `/audio/${moodFileName}.mp3`;
+      audio.loop = true;
+      
+      // Add error handling for audio loading
+      audio.onerror = (e) => {
+        console.error("Error loading audio:", e);
+        console.log("Attempted to load:", audio.src);
+      };
+  
+      // Store audio element in ref
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      audioRef.current = audio;
+      
+      // Set initial volume
+      audio.volume = volume / 100;
+      
+      // Start playing when ready
+      audio.addEventListener('canplaythrough', () => {
+        if (isPlaying) {
+          audio.play();
+        }
+      });
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Remove the Web Audio API related code and keep only these audio controls
   useEffect(() => {
     if (audioRef.current) {
       isPlaying ? audioRef.current.play() : audioRef.current.pause();
@@ -40,7 +102,9 @@ export default function App() {
   }, [isPlaying]);
 
   useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = volume / 100;
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100;
+    }
   }, [volume]);
 
   /* ---------------------------- prompt formatting ---------------------------- */
@@ -54,26 +118,6 @@ export default function App() {
         // bold full timing lines such as 0:00-0:15 (Intro)
         .replace(/^[\t ]*(\d{1,2}:\d{2}\s*-?\s*\d{1,2}:\d{2}\s*\([^\n]+\))/gm, "<strong>$1</strong>")
     );
-  };
-
-  /* ------------------------------ generate music ----------------------------- */
-  const handleGenerate = async () => {
-    // Check if all fields are selected
-    if (!selectedParams.genre || !selectedParams.mood || !selectedParams.tempo || !selectedParams.duration) {
-      alert("Please select all fields (Genre, Mood, Tempo, and Duration) before generating music.");
-      return;
-    }
-  
-    setIsLoading(true);
-    try {
-      const raw = await generateMusicPrompt(selectedParams);
-      setGeneratedPrompt(formatPrompt(raw));
-      setIsPlaying(true);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   /* ---------------------------------- render --------------------------------- */
